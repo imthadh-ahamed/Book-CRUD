@@ -83,58 +83,38 @@ Call stored procedures through a deliberate persistence adapter. Prefer `EntityM
 
 Keep JPA entities mapped to the real schema, but do not assume a stored procedure result set automatically becomes a managed entity. Use explicit result mapping and refresh/clear the persistence context when necessary to avoid stale entity state. Avoid mapping a procedure's result to a managed entity unless column aliases and entity mapping fully match.
 
-## Clean Architecture and package structure
+## Architecture and package structure
 
-Use a pragmatic layered/clean architecture. Suggested package structure (adapt naming consistently):
+Use traditional Spring Boot layered architecture:
 
-```text
-src/main/java/com/example/bookapi/
-  BookApiApplication.java
-  domain/
-    model/
-      Book.java
-      StockStatus.java
-    exception/
-      BookNotFoundException.java
-      DuplicateBookException.java
-    port/
-      in/
-        CreateBookUseCase.java
-        GetBookUseCase.java
-        ListBooksUseCase.java
-        UpdateBookUseCase.java
-        DeleteBookUseCase.java
-      out/
-        BookPersistencePort.java
-  application/
-    service/
-      BookService.java
-    dto/
-      CreateBookRequest.java
-      UpdateBookRequest.java
-      BookResponse.java
-      BookPageResponse.java
-    mapper/
-      BookMapper.java
-  infrastructure/
-    persistence/
-      jpa/
-        BookEntity.java
-        SpringDataBookRepository.java
-        JpaBookPersistenceAdapter.java
-      procedure/
-        BookStoredProcedureAdapter.java
-        BookProcedureRow.java
-    config/
-      PersistenceConfig.java
-  presentation/
-    rest/
-      BookController.java
-      ApiExceptionHandler.java
-      dto/ (only if request/response DTOs are intentionally kept at the API boundary)
+```
+BookController → BookService → BookRepository → SQL Server
 ```
 
-Keep dependency direction inward: presentation and infrastructure depend on application/domain; domain must not depend on Spring, JPA, web, or SQL Server. Do not create interfaces or classes that add no meaningful boundary; explain any deviation.
+Package structure under `com.bookCRUD.backend`:
+
+```text
+  BackendApplication.java
+  controller/
+    BookController.java
+  service/
+    BookService.java
+  repository/
+    BookRepository.java          ← JdbcTemplate, calls stored procedures
+  entity/
+    BookEntity.java              ← JPA @Entity for ddl-auto=validate
+    StockStatus.java
+  dto/
+    CreateBookRequest.java
+    UpdateBookRequest.java
+    BookResponse.java
+  exception/
+    BookNotFoundException.java
+    ApiExceptionHandler.java
+  config/                        ← OpenAPI/other config beans if needed
+```
+
+Keep controllers thin (HTTP only). Keep business logic in the service. Keep SQL in the repository. Do not put stored-procedure calls in the service layer.
 
 Do not duplicate DTOs in multiple packages. Pick one clear location and use it consistently. Keep controller methods thin. Keep business rules out of entities and SQL-only mapping code out of the domain.
 
@@ -212,13 +192,11 @@ Inspect the existing project before changing files. Preserve existing work, avoi
 
 Demonstrate them in actual code, not just comments:
 
-- SRP: controller handles HTTP, service/use case handles application workflow, persistence adapter handles database access.
-- OCP: use small ports/adapters so persistence implementations can change without rewriting business rules.
-- LSP: implementations of a port honor the same contract and error semantics.
-- ISP: avoid broad repository interfaces that force consumers to depend on unrelated methods.
-- DIP: application/domain depend on abstractions, not concrete JDBC/JPA classes.
-
-Avoid overengineering. Do not add interfaces for every class mechanically. Explain where a port is useful because the application has a database boundary or multiple persistence strategies.
+- SRP: controller handles HTTP; service handles business logic and transactions; repository handles SQL/stored-procedure calls.
+- OCP: add new endpoints or operations without rewriting existing ones.
+- LSP: exceptions thrown by the repository honor the contract the service expects.
+- ISP: keep repositories and services focused — do not add unrelated methods.
+- DIP: controller depends on BookService (Spring-injected); service depends on BookRepository (Spring-injected). Constructor injection throughout.
 
 ## ORM and Hibernate learning requirements
 

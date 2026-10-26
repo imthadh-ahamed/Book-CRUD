@@ -1,3 +1,16 @@
-# Task 06 — Tests
+# Task 05 — Test coverage
 
-Add unit tests, API/validation tests, and SQL Server integration tests using Testcontainers when Docker is available. Verify CRUD stored procedures, missing IDs, invalid stock/price, Flyway startup, Hibernate schema validation, result mapping, and rollback where relevant. H2 alone is not proof of SQL Server compatibility. Report actual results and skipped tests honestly.
+## Required tests
+- Domain/service unit tests
+- Controller/API tests
+- SQL Server integration tests using Testcontainers if supported
+- Stored-procedure tests for each CRUD operation
+- Missing ID and delete behavior
+- Invalid/missing title, invalid stock enum, negative price, decimal precision
+- Transaction rollback where multi-step work exists
+- Flyway migration startup and Hibernate schema validation
+
+## Acceptance criteria
+- Test commands and actual results are recorded.
+- H2 is not treated as proof of SQL Server procedure compatibility.
+- Skipped tests are clearly identified.

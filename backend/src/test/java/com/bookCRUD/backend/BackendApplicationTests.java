@@ -1,20 +1,20 @@
 package com.bookCRUD.backend;
 
-import com.bookCRUD.backend.domain.port.out.BookPersistencePort;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @SpringBootTest
 class BackendApplicationTests {
 
-	// No real persistence adapter exists yet (Phase 4). Mock the port so
-	// Spring can wire BookService without a concrete implementation bean.
-	@MockitoBean
-	BookPersistencePort persistencePort;
+    // Spring Boot autoconfigures JdbcTemplate from the DataSource. In the test
+    // slice the DataSource autoconfiguration is excluded (test application.properties),
+    // so we supply a mock JdbcTemplate so that BookRepository can be wired up.
+    @MockitoBean
+    JdbcTemplate jdbcTemplate;
 
-	@Test
-	void contextLoads() {
-	}
-
+    @Test
+    void contextLoads() {
+    }
 }

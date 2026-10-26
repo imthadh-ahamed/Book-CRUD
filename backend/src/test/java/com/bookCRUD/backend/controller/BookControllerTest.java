@@ -1,10 +1,10 @@
-package com.bookCRUD.backend.infrastructure.web;
+package com.bookCRUD.backend.controller;
 
-import com.bookCRUD.backend.application.mapper.BookMapper;
-import com.bookCRUD.backend.domain.exception.BookNotFoundException;
-import com.bookCRUD.backend.domain.model.Book;
-import com.bookCRUD.backend.domain.model.StockStatus;
-import com.bookCRUD.backend.domain.port.in.*;
+import com.bookCRUD.backend.dto.BookResponse;
+import com.bookCRUD.backend.entity.StockStatus;
+import com.bookCRUD.backend.exception.ApiExceptionHandler;
+import com.bookCRUD.backend.exception.BookNotFoundException;
+import com.bookCRUD.backend.service.BookService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -18,27 +18,22 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(BookController.class)
-@Import(BookMapper.class)
+@Import(ApiExceptionHandler.class)
 class BookControllerTest {
 
     @Autowired
     MockMvc mvc;
 
-    @MockitoBean CreateBookUseCase createBook;
-    @MockitoBean GetBookUseCase getBook;
-    @MockitoBean ListBooksUseCase listBooks;
-    @MockitoBean UpdateBookUseCase updateBook;
-    @MockitoBean DeleteBookUseCase deleteBook;
+    @MockitoBean
+    BookService bookService;
 
-    private static final Book SAMPLE = new Book(1L, "Clean Code", "A handbook",
-            StockStatus.AVAILABLE, true, new BigDecimal("29.99"));
+    private static final BookResponse SAMPLE = new BookResponse(
+            1L, "Clean Code", "A handbook", StockStatus.AVAILABLE, true, new BigDecimal("29.99"));
 
     private static final String VALID_JSON = """
             {
@@ -51,10 +46,10 @@ class BookControllerTest {
             """;
 
     @Test
-    void createBook_returns201WithBody() throws Exception {
-        when(createBook.createBook(any())).thenReturn(SAMPLE);
+    void create_returns201WithBody() throws Exception {
+        when(bookService.create(any())).thenReturn(SAMPLE);
 
-        mvc.perform(post("/api/v1/books")
+        mvc.perform(post("/api/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(VALID_JSON))
                 .andExpect(status().isCreated())
@@ -63,8 +58,8 @@ class BookControllerTest {
     }
 
     @Test
-    void createBook_returns400WhenTitleBlank() throws Exception {
-        mvc.perform(post("/api/v1/books")
+    void create_returns400WhenTitleBlank() throws Exception {
+        mvc.perform(post("/api/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"title":"","stock":"AVAILABLE","isShown":true,"price":10.00}
@@ -73,46 +68,46 @@ class BookControllerTest {
     }
 
     @Test
-    void getBook_returns200WhenFound() throws Exception {
-        when(getBook.getBook(1L)).thenReturn(SAMPLE);
+    void getById_returns200WhenFound() throws Exception {
+        when(bookService.getById(1L)).thenReturn(SAMPLE);
 
-        mvc.perform(get("/api/v1/books/1"))
+        mvc.perform(get("/api/books/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1));
     }
 
     @Test
-    void getBook_returns404WhenNotFound() throws Exception {
-        when(getBook.getBook(99L)).thenThrow(new BookNotFoundException(99L));
+    void getById_returns404WhenNotFound() throws Exception {
+        when(bookService.getById(99L)).thenThrow(new BookNotFoundException(99L));
 
-        mvc.perform(get("/api/v1/books/99"))
+        mvc.perform(get("/api/books/99"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.title").value("Book Not Found"));
     }
 
     @Test
-    void listBooks_returns200WithList() throws Exception {
-        when(listBooks.listBooks()).thenReturn(List.of(SAMPLE));
+    void getAll_returns200WithList() throws Exception {
+        when(bookService.getAll()).thenReturn(List.of(SAMPLE));
 
-        mvc.perform(get("/api/v1/books"))
+        mvc.perform(get("/api/books"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1));
     }
 
     @Test
-    void listBooks_returns200WithEmptyList() throws Exception {
-        when(listBooks.listBooks()).thenReturn(List.of());
+    void getAll_returns200WithEmptyList() throws Exception {
+        when(bookService.getAll()).thenReturn(List.of());
 
-        mvc.perform(get("/api/v1/books"))
+        mvc.perform(get("/api/books"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
     }
 
     @Test
-    void updateBook_returns200WhenFound() throws Exception {
-        when(updateBook.updateBook(eq(1L), any())).thenReturn(SAMPLE);
+    void update_returns200WhenFound() throws Exception {
+        when(bookService.update(eq(1L), any())).thenReturn(SAMPLE);
 
-        mvc.perform(put("/api/v1/books/1")
+        mvc.perform(put("/api/books/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(VALID_JSON))
                 .andExpect(status().isOk())
@@ -120,28 +115,28 @@ class BookControllerTest {
     }
 
     @Test
-    void updateBook_returns404WhenNotFound() throws Exception {
-        when(updateBook.updateBook(eq(99L), any())).thenThrow(new BookNotFoundException(99L));
+    void update_returns404WhenNotFound() throws Exception {
+        when(bookService.update(eq(99L), any())).thenThrow(new BookNotFoundException(99L));
 
-        mvc.perform(put("/api/v1/books/99")
+        mvc.perform(put("/api/books/99")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(VALID_JSON))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void deleteBook_returns204WhenFound() throws Exception {
-        doNothing().when(deleteBook).deleteBook(1L);
+    void delete_returns204WhenFound() throws Exception {
+        doNothing().when(bookService).delete(1L);
 
-        mvc.perform(delete("/api/v1/books/1"))
+        mvc.perform(delete("/api/books/1"))
                 .andExpect(status().isNoContent());
     }
 
     @Test
-    void deleteBook_returns404WhenNotFound() throws Exception {
-        doThrow(new BookNotFoundException(99L)).when(deleteBook).deleteBook(99L);
+    void delete_returns404WhenNotFound() throws Exception {
+        doThrow(new BookNotFoundException(99L)).when(bookService).delete(99L);
 
-        mvc.perform(delete("/api/v1/books/99"))
+        mvc.perform(delete("/api/books/99"))
                 .andExpect(status().isNotFound());
     }
 }

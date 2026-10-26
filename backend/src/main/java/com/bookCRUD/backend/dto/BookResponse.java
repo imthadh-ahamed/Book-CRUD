@@ -1,6 +1,6 @@
-package com.bookCRUD.backend.application.dto;
+package com.bookCRUD.backend.dto;
 
-import com.bookCRUD.backend.domain.model.StockStatus;
+import com.bookCRUD.backend.entity.StockStatus;
 
 import java.math.BigDecimal;
 

@@ -1,6 +1,5 @@
-package com.bookCRUD.backend.infrastructure.web;
+package com.bookCRUD.backend.exception;
 
-import com.bookCRUD.backend.domain.exception.BookNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
