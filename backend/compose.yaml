@@ -77,15 +77,22 @@ services:
   # ── Application ─────────────────────────────────────────────────────────────
   #
   # The app service is gated behind the "app" profile so it does not start
-  # automatically. This is intentional for Phase 1–6 of development, when the
-  # app is run locally with `mvn spring-boot:run` against the containerized
-  # SQL Server. The Dockerfile will be added in Phase 7.
+  # automatically. Run SQL Server only with:
+  #   docker compose up -d sqlserver sqlserver-init
   #
-  # To start the full stack once the Dockerfile exists:
-  #   docker compose --profile app up -d
+  # To start the full stack:
+  #   docker compose --profile app up --build
+  #
+  # Build context is the repository root (one level above this file) so that
+  # both backend/ and database/migrations/ are available to the Docker build.
+  # The Maven resource plugin in pom.xml copies migrations from
+  # ${project.basedir}/../database/migrations, which requires that path to
+  # exist inside the Docker build context.
   #
   app:
-    build: .
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
     profiles:
       - app
     depends_on:

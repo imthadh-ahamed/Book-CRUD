@@ -14,7 +14,7 @@
 	<artifactId>backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>book-crud-backend</name>
-	<description>Book CRUD REST API — Java 21, Spring Boot, SQL Server, Stored Procedures, Clean Architecture</description>
+	<description>Book CRUD REST API — Java 21, Spring Boot 3, SQL Server, Stored Procedures, Layered Architecture</description>
 
 	<properties>
 		<java.version>21</java.version>

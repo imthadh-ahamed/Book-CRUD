@@ -68,6 +68,43 @@ class BookControllerTest {
     }
 
     @Test
+    void create_returns400WhenPriceNegative() throws Exception {
+        mvc.perform(post("/api/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Test","stock":"AVAILABLE","isShown":true,"price":-1.00}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void create_returns400WhenPriceZeroDecimalMinBoundary() throws Exception {
+        // price=0.00 satisfies @DecimalMin("0.00") and the DB CHECK (price >= 0).
+        // This test documents that zero IS accepted — it is a valid price for free books.
+        when(bookService.create(any())).thenReturn(
+                new BookResponse(2L, "Free Book", null, StockStatus.AVAILABLE, true, BigDecimal.ZERO));
+
+        mvc.perform(post("/api/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Free Book","stock":"AVAILABLE","isShown":true,"price":0.00}
+                                """))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void create_returns400WhenStockInvalid() throws Exception {
+        // Jackson cannot deserialise "UNKNOWN" into StockStatus enum;
+        // Spring Boot returns 400 via HttpMessageNotReadableException.
+        mvc.perform(post("/api/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Test","stock":"UNKNOWN","isShown":true,"price":10.00}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void getById_returns200WhenFound() throws Exception {
         when(bookService.getById(1L)).thenReturn(SAMPLE);
 

@@ -58,4 +58,8 @@ public class BookEntity {
     public StockStatus getStock() { return stock; }
     public boolean isShown() { return isShown; }
     public BigDecimal getPrice() { return price; }
+
+    // Setter used by BookEntityJpaTest to demonstrate Hibernate dirty checking.
+    // Mutating a managed entity's field triggers an automatic UPDATE on flush.
+    public void setTitle(String title) { this.title = title; }
 }

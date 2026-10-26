@@ -1,0 +1,27 @@
+# Docker build context is the repository root.
+# Exclude files that are not needed inside the image.
+
+# Maven build output (the Dockerfile compiles inside the builder stage;
+# the host target/ directory is never needed)
+backend/target/
+
+# Secrets — never send real credentials to the Docker daemon
+backend/.env
+
+# Git history
+.git/
+
+# IDE and OS files
+backend/.idea/
+backend/*.iml
+backend/.vscode/
+.DS_Store
+Thumbs.db
+
+# Claude Code workspace files (not needed in the image)
+backend/.claude/
+backend/CLAUDE.md
+backend/PACKAGE_CONTENTS.txt
+backend/Tasks/
+backend/HELP.md
+
