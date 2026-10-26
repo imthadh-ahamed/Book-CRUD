@@ -1,0 +1,19 @@
+package com.bookCRUD.backend.infrastructure.web;
+
+import com.bookCRUD.backend.domain.exception.BookNotFoundException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+
+@RestControllerAdvice
+public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
+
+    @ExceptionHandler(BookNotFoundException.class)
+    ProblemDetail handleBookNotFound(BookNotFoundException ex) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        pd.setTitle("Book Not Found");
+        return pd;
+    }
+}
