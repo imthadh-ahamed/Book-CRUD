@@ -1,0 +1,31 @@
+# .dockerignore — files excluded from the Docker build context.
+# Keeping the context small speeds up docker build and prevents secrets from
+# being sent to the Docker daemon.
+
+# Maven build output (the multi-stage Dockerfile will compile inside the builder
+# image, so the host target/ is never needed in the image)
+target/
+
+# IDE and OS files
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Secrets — never include real credentials in the image
+.env
+
+# Git history is not needed inside the container
+.git/
+.gitignore
+.gitattributes
+
+# Claude Code workspace files
+.claude/
+CLAUDE.md
+PACKAGE_CONTENTS.txt
+Tasks/
+
+# Test reports
+surefire-reports/

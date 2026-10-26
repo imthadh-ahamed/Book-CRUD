@@ -2,47 +2,141 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.1.2</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<version>3.4.5</version>
+		<relativePath/>
 	</parent>
+
 	<groupId>com.bookCRUD</groupId>
 	<artifactId>backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
+	<name>book-crud-backend</name>
+	<description>Book CRUD REST API — Java 21, Spring Boot, SQL Server, Stored Procedures, Clean Architecture</description>
+
 	<properties>
 		<java.version>21</java.version>
+		<springdoc.version>2.8.9</springdoc.version>
 	</properties>
+
 	<dependencies>
+
+		<!-- ── Web ─────────────────────────────────────────────────────────── -->
+		<!--
+		  spring-boot-starter-web pulls in Spring MVC, Jackson (JSON), Tomcat,
+		  and the core Spring Boot auto-configuration. This is how REST controllers
+		  receive HTTP requests and return JSON responses.
+		-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc</artifactId>
+			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
+		<!-- ── Validation ───────────────────────────────────────────────────── -->
+		<!--
+		  Enables Jakarta Bean Validation (e.g. @NotBlank, @DecimalMin on DTOs).
+		  Spring Boot wires this into MVC so invalid request bodies return 400
+		  automatically, without custom if-checks in every controller method.
+		-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+
+		<!-- ── JPA / Hibernate ──────────────────────────────────────────────── -->
+		<!--
+		  spring-boot-starter-data-jpa bundles:
+		    - Hibernate (the JPA implementation that translates Java objects ↔ SQL)
+		    - Spring Data JPA (adds repository interfaces like JpaRepository<T,ID>)
+		    - Spring's transaction manager (coordinates @Transactional)
+		  Version is controlled by the Spring Boot BOM — do not pin it separately.
+		-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+
+		<!-- ── SQL Server JDBC driver ───────────────────────────────────────── -->
+		<!--
+		  The Microsoft JDBC driver lets Java connect to SQL Server.
+		  Spring Boot's BOM manages the version; no explicit version is set here.
+		  The driver is also needed at test runtime for Testcontainers integration tests.
+		-->
+		<dependency>
+			<groupId>com.microsoft.sqlserver</groupId>
+			<artifactId>mssql-jdbc</artifactId>
+		</dependency>
+
+		<!-- ── Flyway (core + SQL Server module) ────────────────────────────── -->
+		<!--
+		  Flyway applies versioned SQL migration scripts (V1__, V2__…) to the
+		  database at application startup. Two modules are required for SQL Server:
+		    - flyway-core:        the migration engine itself
+		    - flyway-sqlserver:   SQL Server dialect support (handles GO batch
+		                         separators in T-SQL scripts)
+		  Both versions are managed by the Spring Boot BOM.
+		-->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-sqlserver</artifactId>
+		</dependency>
+
+		<!-- ── Springdoc OpenAPI / Swagger UI ───────────────────────────────── -->
+		<!--
+		  Generates /v3/api-docs (JSON describing every endpoint) and hosts
+		  /swagger-ui/index.html (interactive browser UI for the API).
+		  springdoc 2.x is required for Spring Boot 3.x; version 1.x is Spring Boot 2
+		  only. Not managed by the Spring Boot BOM, so we pin it explicitly.
+		-->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>${springdoc.version}</version>
+		</dependency>
+
+		<!-- ── Testing ──────────────────────────────────────────────────────── -->
+		<!--
+		  spring-boot-starter-test is the single test dependency you need. It bundles:
+		    - JUnit 5             (test runner and assertions)
+		    - Mockito             (mocking collaborators in unit tests)
+		    - AssertJ             (fluent assertion library)
+		    - MockMvc             (simulate HTTP calls to controllers without a server)
+		    - Spring Boot Test    (@SpringBootTest, @WebMvcTest, etc.)
+		  Scope "test" means it is only on the classpath during mvn test, not packaged.
+		-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
 	</dependencies>
 
 	<build>
+		<resources>
+			<!-- Standard main resources (application.properties, etc.) -->
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
+			<!--
+			  Copy Flyway migration scripts from the root database/ folder into the
+			  compiled JAR's classpath at db/migration. This is the path Flyway scans
+			  by default (classpath:db/migration). The source SQL files live under
+			  database/migrations/ for human browsing; the JAR includes them
+			  automatically so Docker images need no extra volume mount.
+			-->
+			<resource>
+				<directory>${project.basedir}/database/migrations</directory>
+				<targetPath>db/migration</targetPath>
+			</resource>
+		</resources>
+
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
