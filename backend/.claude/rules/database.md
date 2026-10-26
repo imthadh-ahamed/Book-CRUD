@@ -1,0 +1,12 @@
+# Database rules
+- Use Microsoft SQL Server and T-SQL only.
+- Use Flyway as the authoritative deployment history.
+- Organize database assets under `database/migrations`, `tables`, `procedures`, `functions`, and `scripts`.
+- Document how reference scripts stay synchronized with migrations.
+- Configure Hibernate `ddl-auto=validate`; no Hibernate schema mutation.
+- CRUD API path must invoke stored procedures explicitly through an adapter.
+- `JpaRepository.save()` does not automatically call stored procedures.
+- Use a single intended DataSource/transaction boundary for JPA and JDBC.
+- Use `BigDecimal` / `DECIMAL`, `BIT`, `NVARCHAR`, and string enum values.
+- Do not use PostgreSQL syntax, driver, or `REFCURSOR`.
+- Never edit an applied Flyway migration; add a new version.
