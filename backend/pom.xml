@@ -132,7 +132,12 @@
 			  automatically so Docker images need no extra volume mount.
 			-->
 			<resource>
-				<directory>${project.basedir}/database/migrations</directory>
+				<!--
+				  The database/ folder lives one level above backend/ (at the repo root).
+				  ${project.basedir} = F:\Java\Book-CRUD\backend
+				  ${project.basedir}/../database/migrations = F:\Java\Book-CRUD\database\migrations
+				-->
+				<directory>${project.basedir}/../database/migrations</directory>
 				<targetPath>db/migration</targetPath>
 			</resource>
 		</resources>
