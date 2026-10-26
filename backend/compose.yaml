@@ -1,0 +1,105 @@
+# Book CRUD — Docker Compose
+#
+# Copy .env.example to .env and fill in DB_PASSWORD before running.
+#
+# Start SQL Server only (for local Spring Boot development):
+#   docker compose up -d sqlserver sqlserver-init
+#
+# Start the full stack (requires the app to be built first — Phase 7):
+#   docker compose --profile app up -d
+#
+# Stop everything and remove containers (keeps the data volume):
+#   docker compose down
+#
+# Stop and DELETE all data (destructive):
+#   docker compose down -v
+
+services:
+
+  # ── SQL Server ─────────────────────────────────────────────────────────────
+  #
+  # Uses the official Microsoft SQL Server 2022 Developer Edition image.
+  # Developer Edition is free for development and testing; it must not be used
+  # in production workloads (use Standard or Enterprise for those).
+  #
+  # IMPORTANT: By setting ACCEPT_EULA=Y you accept the SQL Server license:
+  # https://hub.docker.com/_/microsoft-mssql-server
+  #
+  sqlserver:
+    image: ${MSSQL_IMAGE:-mcr.microsoft.com/mssql/server:2022-latest}
+    environment:
+      ACCEPT_EULA: ${ACCEPT_EULA:-Y}
+      SA_PASSWORD: ${DB_PASSWORD}
+      MSSQL_PID: Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      # Named volume keeps database files across container restarts.
+      # Data is NOT deleted by `docker compose down`; use `docker compose down -v`
+      # to also remove the volume (and all stored data).
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      # sqlcmd is bundled in the SQL Server image. -C trusts the self-signed
+      # TLS certificate used by the container. The double-$ escapes Compose
+      # variable expansion so $SA_PASSWORD is evaluated at container runtime.
+      test:
+        - CMD-SHELL
+        - >
+          /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$SA_PASSWORD"
+          -C -Q "SELECT 1" > /dev/null || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  # ── Database initializer ────────────────────────────────────────────────────
+  #
+  # Runs once after SQL Server is healthy and creates the BookCrudDev database
+  # if it does not already exist. Uses the same SQL Server image (sqlcmd is
+  # available inside it) so no extra image is needed.
+  #
+  # restart: "no" means Docker will not restart this container after it exits.
+  # The exit code is 0 on success, which satisfies depends_on condition
+  # service_completed_successfully used by the app service.
+  #
+  sqlserver-init:
+    image: ${MSSQL_IMAGE:-mcr.microsoft.com/mssql/server:2022-latest}
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      SA_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./docker/create-database.sh:/create-database.sh:ro
+    command: ["/bin/bash", "/create-database.sh"]
+    restart: "no"
+
+  # ── Application ─────────────────────────────────────────────────────────────
+  #
+  # The app service is gated behind the "app" profile so it does not start
+  # automatically. This is intentional for Phase 1–6 of development, when the
+  # app is run locally with `mvn spring-boot:run` against the containerized
+  # SQL Server. The Dockerfile will be added in Phase 7.
+  #
+  # To start the full stack once the Dockerfile exists:
+  #   docker compose --profile app up -d
+  #
+  app:
+    build: .
+    profiles:
+      - app
+    depends_on:
+      sqlserver-init:
+        condition: service_completed_successfully
+    environment:
+      DB_URL: jdbc:sqlserver://sqlserver:1433;databaseName=BookCrudDev;encrypt=true;trustServerCertificate=true
+      DB_USERNAME: ${DB_USERNAME:-sa}
+      DB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "8080:8080"
+    restart: on-failure
+
+volumes:
+  sqlserver_data:
+    # External: false (default) — Compose owns this volume.
+    # Docker will not delete it on `docker compose down`; only on `down -v`.
